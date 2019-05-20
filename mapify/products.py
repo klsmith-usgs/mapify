@@ -682,7 +682,7 @@ def synthetic(models: Sequence, ordinal: int, **kwargs) -> List[int]:
     for name in ('blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'thermal'):
         for band in model.bands:
             if band.name == name:
-                if name == 'thermal':
+                if name == 'thermal' and (model.curve_qa != 44 or model.curve_qa != 54):
                     vals.append(int(kelvin(predict(band, ordinal))))
                 else:
                     vals.append(int(predict(band, ordinal)))
