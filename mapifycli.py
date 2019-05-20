@@ -90,8 +90,12 @@ def multi(args: argparse.Namespace) -> None:
 
 def enqueue(jdir: str, pdir: str, kill: int) -> mp.Queue:
     q = mp.Queue()
-    for j, p in zip(jsonpaths(jdir), picklepaths(pdir)):
-        q.put((j, p))
+    if pdir is None:
+        for j in jsonpaths(jdir):
+            q.put((j, None))
+    else:
+        for j, p in zip(jsonpaths(jdir), picklepaths(pdir)):
+            q.put((j, p))
 
     for _ in range(kill):
         q.put((-1, -1))
@@ -129,12 +133,18 @@ def worker(inq: mp.Queue, outq: mp.Queue, args: argparse.Namespace):
             outq.put((-1,) * 3)
             break
 
-        log.debug('Received: %s and %s',
-                  os.path.split(jpath)[-1],
-                  os.path.split(ppath)[-1])
+        log.debug('Received: %s',
+                  os.path.split(jpath)[-1]
+                  # os.path.split(ppath)[-1]
+                  )
 
         jdata = loadjfile(jpath)
-        pdata = loadpfile(ppath)
+
+        if ppath is not None:
+            pdata = loadpfile(ppath)
+        else:
+            pdata = None
+
         ccdc = spatialccdc(jdata, pdata)
         chip_x, chip_y = pathcoords(jpath)
 
@@ -291,9 +301,6 @@ if __name__ == '__main__':
     parser.add_argument('jdir',
                         type=str,
                         help='Input directory of JSON files to process')
-    parser.add_argument('pdir',
-                        type=str,
-                        help='Input directory of pickle files to process')
     parser.add_argument('outdir',
                         type=str,
                         help='Output directory for GeoTiff maps')
@@ -304,8 +311,15 @@ if __name__ == '__main__':
     parser.add_argument('prods',
                         type=str,
                         help='Comma separated list of products to build')
-    parser.add_argument('nlcdpath',
+    parser.add_argument('-pdir',
                         type=str,
+                        default=None,
+                        required=False,
+                        help='Input directory of pickle files to process for classification')
+    parser.add_argument('-nlcdpath',
+                        type=str,
+                        default=None,
+                        required=False,
                         help='File path to NLCD')
     parser.add_argument('--no-fill-begin',
                         dest='fill_begin',

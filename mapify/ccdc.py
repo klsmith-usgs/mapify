@@ -263,7 +263,7 @@ def spatialccd(jdata: list) -> list:
                 result = d.get('result', 'null')
                 outdata[row][col] = loadjstr(result)
             except:
-                raise ValueError
+                raise #ValueError
 
     return list(outdata.flatten())
 #
@@ -282,6 +282,10 @@ def spatialccd(jdata: list) -> list:
 #     return np.array(pdata).reshape(100, 100)
 
 
+def noclass(ccd: dict) -> list:
+    return [buildccdc(model) for model in ccd['change_models']]
+
+
 def spatialccdc(jdata: list, pdata: list) -> list:
     """
     Provide a unified CCDC model in a pseudo-spatial chip, as represented by a
@@ -296,8 +300,10 @@ def spatialccdc(jdata: list, pdata: list) -> list:
     """
     # cl = spatialcl(pdata).flatten()
     ccd = spatialccd(jdata)
-
-    return [unify(c, cl1) for c, cl1 in zip(ccd, pdata)]
+    if pdata is None:
+        return [noclass(c) for c in ccd]
+    else:
+        return [unify(c, cl1) for c, cl1 in zip(ccd, pdata)]
 
 
 def validate(jpaths: list, ppaths: list) -> list:
