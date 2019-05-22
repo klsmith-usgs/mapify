@@ -711,7 +711,7 @@ def prodmap() -> dict:
             'LC_PrimeConf': [lc_primaryconf, gdal.GDT_Byte],
             'LC_SecondConf': [lc_secondaryconf, gdal.GDT_Byte],
             'LC_Change': [lc_fromto, gdal.GDT_Byte],
-            'Synthetic': [synthetic, gdal.GDT_UInt16]}
+            'Synthetic': [synthetic, gdal.GDT_Int16]}
 
 
 def is_lc(name: str) -> bool:
