@@ -9,8 +9,6 @@ from typing import Tuple, List
 from osgeo import gdal
 import numpy as np
 
-from mapify.app import cu_tileaff as _cu_tileaff
-
 
 def create(path: str, rows: int, cols: int, affine: tuple,
            datatype: int, proj: str, bands: int=1,
@@ -207,7 +205,7 @@ def transform_rc(row: int, col: int, affine: tuple) -> Tuple[int, int]:
 
 
 @lru_cache()
-def determine_hv(x: float, y: float, affine: tuple=_cu_tileaff) -> Tuple[int, int]:
+def determine_hv(x: float, y: float, affine: tuple) -> Tuple[int, int]:
     """
     Determine the ARD tile H/V that contains the given coordinate.
 

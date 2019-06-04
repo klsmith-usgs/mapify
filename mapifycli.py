@@ -176,8 +176,9 @@ def worker(inq: mp.Queue, outq: mp.Queue, args: argparse.Namespace):
         outq.put((chip_x, chip_y, out))
 
 
-def filename(chip_x: float, chip_y: float, prod: str, date: str, trunc_date: bool) -> str:
-    h, v = determine_hv(chip_x, chip_y)
+def filename(chip_x: float, chip_y: float, prod: str, date: str, trunc_date: bool, region: str) -> str:
+    regaff = regiontileaff(region)
+    h, v = determine_hv(chip_x, chip_y, regaff)
 
     if trunc_date:
         date = date.split('-')[0]
@@ -210,9 +211,11 @@ def regionwkt(region: str) -> str:
     else:
         raise ValueError
 
+
 def writechip(path: str, chip_x: float, chip_y: float, data: np.ndarray, region: str) -> None:
-    h, v = determine_hv(chip_x, chip_y)
-    ulx, uly = transform_rc(v, h, regiontileaff(region))
+    regaff = regiontileaff(region)
+    h, v = determine_hv(chip_x, chip_y, regaff)
+    ulx, uly = transform_rc(v, h, regaff)
     aff = buildaff(ulx, uly, 30)
     row_off, col_off = transform_geo(chip_x, chip_y, aff)
 
@@ -230,8 +233,9 @@ def writechip(path: str, chip_x: float, chip_y: float, data: np.ndarray, region:
 
 
 def writesynthetic(path: str, chip_x: float, chip_y: float, data: np.ndarray, region: str) -> None:
-    h, v = determine_hv(chip_x, chip_y)
-    ulx, uly = transform_rc(v, h, regiontileaff(region))
+    regaff = regiontileaff(region)
+    h, v = determine_hv(chip_x, chip_y, regaff)
+    ulx, uly = transform_rc(v, h, regaff)
     aff = buildaff(ulx, uly, 30)
     row_off, col_off = transform_geo(chip_x, chip_y, aff)
 
@@ -240,8 +244,9 @@ def writesynthetic(path: str, chip_x: float, chip_y: float, data: np.ndarray, re
 
 
 def maketile(path: str, chip_x: float, chip_y: float, product: str, region: str) -> gdal.Dataset:
-    h, v = determine_hv(chip_x, chip_y)
-    ulx, uly = transform_rc(v, h, regiontileaff(region))
+    regaff = regiontileaff(region)
+    h, v = determine_hv(chip_x, chip_y, regaff)
+    ulx, uly = transform_rc(v, h, regaff)
     aff = buildaff(ulx, uly, 30)
     datatype = _productmap[product][1]
 
@@ -258,8 +263,8 @@ def maketile(path: str, chip_x: float, chip_y: float, product: str, region: str)
     return create(path, 5000, 5000, aff, datatype, ct=ct, bands=bands, proj=regionwkt(region))
 
 
-def makepath(root: str, chip_x: float, chip_y: float, prod: str, date: str, trunc_dates: bool) -> str:
-    return os.path.join(root, filename(chip_x, chip_y, prod, date, trunc_dates))
+def makepath(root: str, chip_x: float, chip_y: float, prod: str, date: str, trunc_dates: bool, region: str) -> str:
+    return os.path.join(root, filename(chip_x, chip_y, prod, date, trunc_dates, region))
 
 
 def multiout(output_q, outdir, count, cliargs):
@@ -285,7 +290,7 @@ def multiout(output_q, outdir, count, cliargs):
 
         for prod in out:
             for date in out[prod]:
-                outpath = makepath(outdir, chip_x, chip_y, prod, date, cliargs.trunc_dates)
+                outpath = makepath(outdir, chip_x, chip_y, prod, date, cliargs.trunc_dates, cliargs.region)
 
                 if outpath not in dss:
                     # log.debug('Outpath not in keys: %s', outpath)
