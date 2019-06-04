@@ -15,8 +15,8 @@ from osgeo import gdal
 
 from mapify.ccdc import jsonpaths, picklepaths, spatialccdc, loadjfile, loadpfile, pathcoords
 from mapify.products import prodmap, crosswalk, is_lc, lc_color
-from mapify.spatial import readxy, determine_hv, create, transform_geo, buildaff, write, transform_rc, writep
-from mapify.app import cu_tileaff as _cu_tileaff
+from mapify.spatial import readxy, determine_hv, create, transform_geo, buildaff, transform_rc, writep
+from mapify.app import cu_tileaff, ak_tileaff
 
 _productmap = prodmap()
 
@@ -193,10 +193,18 @@ def filename(chip_x: float, chip_y: float, prod: str, date: str, trunc_date: boo
 #
 #     write(ds, data.reshape(100, 100), col_off, row_off)
 
+def regiontileaff(region: str) -> tuple:
+    if region == 'cu':
+        return cu_tileaff
+    elif region == 'ak':
+        return ak_tileaff
+    else:
+        raise ValueError
 
-def writechip(path: str, chip_x: float, chip_y: float, data: np.ndarray) -> None:
+
+def writechip(path: str, chip_x: float, chip_y: float, data: np.ndarray, region: str) -> None:
     h, v = determine_hv(chip_x, chip_y)
-    ulx, uly = transform_rc(v, h, _cu_tileaff)
+    ulx, uly = transform_rc(v, h, regiontileaff(region))
     aff = buildaff(ulx, uly, 30)
     row_off, col_off = transform_geo(chip_x, chip_y, aff)
 
@@ -213,9 +221,9 @@ def writechip(path: str, chip_x: float, chip_y: float, data: np.ndarray) -> None
 #         write(ds, b, col_off, row_off, band=idx + 1)
 
 
-def writesynthetic(path: str, chip_x: float, chip_y: float, data: np.ndarray) -> None:
+def writesynthetic(path: str, chip_x: float, chip_y: float, data: np.ndarray, region: str) -> None:
     h, v = determine_hv(chip_x, chip_y)
-    ulx, uly = transform_rc(v, h, _cu_tileaff)
+    ulx, uly = transform_rc(v, h, regiontileaff(region))
     aff = buildaff(ulx, uly, 30)
     row_off, col_off = transform_geo(chip_x, chip_y, aff)
 
@@ -223,9 +231,9 @@ def writesynthetic(path: str, chip_x: float, chip_y: float, data: np.ndarray) ->
         writep(path, data[:, idx].reshape(100, 100), col_off, row_off, band=idx + 1)
 
 
-def maketile(path: str, chip_x: float, chip_y: float, product: str) -> gdal.Dataset:
+def maketile(path: str, chip_x: float, chip_y: float, product: str, region: str) -> gdal.Dataset:
     h, v = determine_hv(chip_x, chip_y)
-    ulx, uly = transform_rc(v, h, _cu_tileaff)
+    ulx, uly = transform_rc(v, h, regiontileaff(region))
     aff = buildaff(ulx, uly, 30)
     datatype = _productmap[product][1]
 
@@ -275,15 +283,15 @@ def multiout(output_q, outdir, count, cliargs):
                     # log.debug('Outpath not in keys: %s', outpath)
                     # log.debug('Keys: %s', dss.keys())
                     log.debug('Making product output: %s', outpath)
-                    dss[outpath] = maketile(outpath, chip_x, chip_y, prod)
+                    dss[outpath] = maketile(outpath, chip_x, chip_y, prod, cliargs.region)
                     dss[outpath] = None
 
                 if prod == 'Synthetic':
                     # writesynthetic(dss[outpath], chip_x, chip_y, out[prod][date])
-                    writesynthetic(outpath, chip_x, chip_y, out[prod][date])
+                    writesynthetic(outpath, chip_x, chip_y, out[prod][date], cliargs.region)
                 else:
                     # writechip(dss[outpath], chip_x, chip_y, out[prod][date])
-                    writechip(outpath, chip_x, chip_y, out[prod][date])
+                    writechip(outpath, chip_x, chip_y, out[prod][date], cliargs.region)
         tot += 1
         log.debug('Total chips done: %s', tot)
 
@@ -321,6 +329,13 @@ if __name__ == '__main__':
                         default=None,
                         required=False,
                         help='File path to NLCD')
+    parser.add_argument('-region',
+                        dest='region',
+                        action='store',
+                        choices=['cu', 'ak'],
+                        required=False,
+                        default='cu',
+                        help='ARD region for the tile.')
     parser.add_argument('--no-fill-begin',
                         dest='fill_begin',
                         action='store_false',
