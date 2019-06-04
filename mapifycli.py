@@ -16,7 +16,7 @@ from osgeo import gdal
 from mapify.ccdc import jsonpaths, picklepaths, spatialccdc, loadjfile, loadpfile, pathcoords
 from mapify.products import prodmap, crosswalk, is_lc, lc_color
 from mapify.spatial import readxy, determine_hv, create, transform_geo, buildaff, transform_rc, writep
-from mapify.app import cu_tileaff, ak_tileaff
+from mapify.app import cu_tileaff, ak_tileaff, cu_wkt, ak_wkt
 
 _productmap = prodmap()
 
@@ -202,6 +202,14 @@ def regiontileaff(region: str) -> tuple:
         raise ValueError
 
 
+def regionwkt(region: str) -> str:
+    if region == 'cu':
+        return cu_wkt
+    elif region == 'ak':
+        return ak_wkt
+    else:
+        raise ValueError
+
 def writechip(path: str, chip_x: float, chip_y: float, data: np.ndarray, region: str) -> None:
     h, v = determine_hv(chip_x, chip_y)
     ulx, uly = transform_rc(v, h, regiontileaff(region))
@@ -247,7 +255,7 @@ def maketile(path: str, chip_x: float, chip_y: float, product: str, region: str)
     else:
         bands = 1
 
-    return create(path, 5000, 5000, aff, datatype, ct=ct, bands=bands)
+    return create(path, 5000, 5000, aff, datatype, ct=ct, bands=bands, proj=regionwkt(region))
 
 
 def makepath(root: str, chip_x: float, chip_y: float, prod: str, date: str, trunc_dates: bool) -> str:

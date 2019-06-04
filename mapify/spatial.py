@@ -10,11 +10,10 @@ from osgeo import gdal
 import numpy as np
 
 from mapify.app import cu_tileaff as _cu_tileaff
-from mapify.app import conuswkt as _conuswkt
 
 
 def create(path: str, rows: int, cols: int, affine: tuple,
-           datatype: int, proj: str=_conuswkt, bands: int=1,
+           datatype: int, proj: str, bands: int=1,
            ct: List[gdal.ColorTable]=None) -> gdal.Dataset:
     """
     Create a GeoTif and return the data set to work with.
