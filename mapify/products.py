@@ -761,6 +761,6 @@ def lc_color() -> gdal.ColorTable:
 
         for j in range(1, 9):
             if i != j:
-                ct.SetColorEntry(int(f'{i}{j}'), (162, 1, 255, 0))  # Different class
+                ct.SetColorEntry(i * 10 + j, (162, 1, 255, 0))  # Different class
 
     return ct
