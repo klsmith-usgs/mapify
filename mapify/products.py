@@ -756,11 +756,11 @@ def lc_color() -> gdal.ColorTable:
     # ct.SetColorEntry(77, (255, 255, 255, 0))  # White Snow
     # ct.SetColorEntry(88, (179, 174, 163, 0))  # Brown Barren
 
-    for i in range(1, 9):
+    for i in range(10, 90, 10):
         # ct.SetColorEntry(i * 10, (145, 145, 145, 0))  # End of Time Series ( no longer used )
 
         for j in range(1, 9):
             if i != j:
-                ct.SetColorEntry(i * 10 + j, (162, 1, 255, 0))  # Different class
+                ct.SetColorEntry(i + j, (162, 1, 255, 0))  # Different class
 
     return ct
