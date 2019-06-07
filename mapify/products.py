@@ -746,19 +746,18 @@ def lc_color() -> gdal.ColorTable:
     ct.SetColorEntry(8, (179, 174, 163, 0))  # Brown Barren
     ct.SetColorEntry(9, (251, 154, 153, 0))  # Pink Change
 
-    # SegChange Values
-    # Same class
-    ct.SetColorEntry(11, (238, 0, 0, 0))  # Red Developed
-    ct.SetColorEntry(22, (171, 112, 40, 0))  # Orange Ag
-    ct.SetColorEntry(33, (227, 227, 194, 0))  # Yellow Grass
-    ct.SetColorEntry(44, (28, 99, 48, 0))  # Green Tree
-    ct.SetColorEntry(55, (71, 107, 161, 0))  # Blue Water
-    ct.SetColorEntry(66, (186, 217, 235, 0))  # Lt. Blue Wet
-    ct.SetColorEntry(77, (255, 255, 255, 0))  # White Snow
-    ct.SetColorEntry(88, (179, 174, 163, 0))  # Brown Barren
+    # Same class ( no longer used / needed )
+    # ct.SetColorEntry(11, (238, 0, 0, 0))  # Red Developed
+    # ct.SetColorEntry(22, (171, 112, 40, 0))  # Orange Ag
+    # ct.SetColorEntry(33, (227, 227, 194, 0))  # Yellow Grass
+    # ct.SetColorEntry(44, (28, 99, 48, 0))  # Green Tree
+    # ct.SetColorEntry(55, (71, 107, 161, 0))  # Blue Water
+    # ct.SetColorEntry(66, (186, 217, 235, 0))  # Lt. Blue Wet
+    # ct.SetColorEntry(77, (255, 255, 255, 0))  # White Snow
+    # ct.SetColorEntry(88, (179, 174, 163, 0))  # Brown Barren
 
     for i in range(1, 9):
-        ct.SetColorEntry(i * 10, (145, 145, 145, 0))  # End of Time Series
+        # ct.SetColorEntry(i * 10, (145, 145, 145, 0))  # End of Time Series ( no longer used )
 
         for j in range(1, 9):
             if i != j:
