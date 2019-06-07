@@ -744,7 +744,7 @@ def lc_color() -> gdal.ColorTable:
     ct.SetColorEntry(6, (186, 217, 235, 0))  # Lt. Blue Wet
     ct.SetColorEntry(7, (255, 255, 255, 0))  # White Snow
     ct.SetColorEntry(8, (179, 174, 163, 0))  # Brown Barren
-    ct.SetColorEntry(9, (251, 154, 153, 0))  # Pink Change
+    # ct.SetColorEntry(9, (251, 154, 153, 0))  # Pink Change ( no longer used )
 
     # Same class ( no longer used / needed )
     # ct.SetColorEntry(11, (238, 0, 0, 0))  # Red Developed
