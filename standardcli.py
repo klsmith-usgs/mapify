@@ -17,6 +17,7 @@ from mapify.ccdc import jsonpaths, picklepaths, spatialccdc, loadjfile, loadpfil
 from mapify.products import prodmap, crosswalk, is_lc, lc_color
 from mapify.spatial import readxy, determine_hv, create, transform_geo, buildaff, write, transform_rc, writep
 from mapify.app import cu_tileaff as _cu_tileaff
+from mapify.app import cu_wkt
 
 _productmap = prodmap()
 
@@ -164,7 +165,7 @@ def worker(inq: mp.Queue, outq: mp.Queue, args: argparse.Namespace):
 
 
 def filename(chip_x: float, chip_y: float, prod: str, date: str, trunc_date: bool) -> str:
-    h, v = determine_hv(chip_x, chip_y)
+    h, v = determine_hv(chip_x, chip_y, _cu_tileaff)
 
     if trunc_date:
         date = date.split('-')[0]
@@ -182,7 +183,7 @@ def filename(chip_x: float, chip_y: float, prod: str, date: str, trunc_date: boo
 
 
 def writechip(path: str, chip_x: float, chip_y: float, data: np.ndarray) -> None:
-    h, v = determine_hv(chip_x, chip_y)
+    h, v = determine_hv(chip_x, chip_y, _cu_tileaff)
     ulx, uly = transform_rc(v, h, _cu_tileaff)
     aff = buildaff(ulx, uly, 30)
     row_off, col_off = transform_geo(chip_x, chip_y, aff)
@@ -201,7 +202,7 @@ def writechip(path: str, chip_x: float, chip_y: float, data: np.ndarray) -> None
 
 
 def writesynthetic(path: str, chip_x: float, chip_y: float, data: np.ndarray) -> None:
-    h, v = determine_hv(chip_x, chip_y)
+    h, v = determine_hv(chip_x, chip_y, _cu_tileaff)
     ulx, uly = transform_rc(v, h, _cu_tileaff)
     aff = buildaff(ulx, uly, 30)
     row_off, col_off = transform_geo(chip_x, chip_y, aff)
@@ -211,7 +212,7 @@ def writesynthetic(path: str, chip_x: float, chip_y: float, data: np.ndarray) ->
 
 
 def maketile(path: str, chip_x: float, chip_y: float, product: str) -> gdal.Dataset:
-    h, v = determine_hv(chip_x, chip_y)
+    h, v = determine_hv(chip_x, chip_y, _cu_tileaff)
     ulx, uly = transform_rc(v, h, _cu_tileaff)
     aff = buildaff(ulx, uly, 30)
     datatype = _productmap[product][1]
@@ -226,7 +227,7 @@ def maketile(path: str, chip_x: float, chip_y: float, product: str) -> gdal.Data
     else:
         bands = 1
 
-    return create(path, 5000, 5000, aff, datatype, ct=ct, bands=bands)
+    return create(path, 5000, 5000, aff, datatype, ct=ct, bands=bands, proj=cu_wkt)
 
 
 def makepath(root: str, chip_x: float, chip_y: float, prod: str, date: str, trunc_dates: bool) -> str:
