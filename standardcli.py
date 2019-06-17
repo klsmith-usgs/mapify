@@ -16,8 +16,7 @@ from osgeo import gdal
 from mapify.ccdc import jsonpaths, picklepaths, spatialccdc, loadjfile, loadpfile, pathcoords
 from mapify.products import prodmap, crosswalk, is_lc, lc_color
 from mapify.spatial import readxy, determine_hv, create, transform_geo, buildaff, write, transform_rc, writep
-from mapify.app import cu_tileaff as _cu_tileaff
-from mapify.app import cu_wkt
+from mapify.app import cu_tileaff, ak_tileaff, cu_wkt, ak_wkt
 
 _productmap = prodmap()
 
@@ -164,8 +163,9 @@ def worker(inq: mp.Queue, outq: mp.Queue, args: argparse.Namespace):
         outq.put((chip_x, chip_y, out))
 
 
-def filename(chip_x: float, chip_y: float, prod: str, date: str, trunc_date: bool) -> str:
-    h, v = determine_hv(chip_x, chip_y, _cu_tileaff)
+def filename(chip_x: float, chip_y: float, prod: str, date: str, trunc_date: bool, region: str) -> str:
+    regaff = regiontileaff(region)
+    h, v = determine_hv(chip_x, chip_y, regaff)
 
     if trunc_date:
         date = date.split('-')[0]
@@ -182,9 +182,28 @@ def filename(chip_x: float, chip_y: float, prod: str, date: str, trunc_date: boo
 #     write(ds, data.reshape(100, 100), col_off, row_off)
 
 
-def writechip(path: str, chip_x: float, chip_y: float, data: np.ndarray) -> None:
-    h, v = determine_hv(chip_x, chip_y, _cu_tileaff)
-    ulx, uly = transform_rc(v, h, _cu_tileaff)
+def regiontileaff(region: str) -> tuple:
+    if region == 'cu':
+        return cu_tileaff
+    elif region == 'ak':
+        return ak_tileaff
+    else:
+        raise ValueError
+
+
+def regionwkt(region: str) -> str:
+    if region == 'cu':
+        return cu_wkt
+    elif region == 'ak':
+        return ak_wkt
+    else:
+        raise ValueError
+
+
+def writechip(path: str, chip_x: float, chip_y: float, data: np.ndarray, region: str) -> None:
+    regaff = regiontileaff(region)
+    h, v = determine_hv(chip_x, chip_y, regaff)
+    ulx, uly = transform_rc(v, h, regaff)
     aff = buildaff(ulx, uly, 30)
     row_off, col_off = transform_geo(chip_x, chip_y, aff)
 
@@ -201,9 +220,10 @@ def writechip(path: str, chip_x: float, chip_y: float, data: np.ndarray) -> None
 #         write(ds, b, col_off, row_off, band=idx + 1)
 
 
-def writesynthetic(path: str, chip_x: float, chip_y: float, data: np.ndarray) -> None:
-    h, v = determine_hv(chip_x, chip_y, _cu_tileaff)
-    ulx, uly = transform_rc(v, h, _cu_tileaff)
+def writesynthetic(path: str, chip_x: float, chip_y: float, data: np.ndarray, region: str) -> None:
+    regaff = regiontileaff(region)
+    h, v = determine_hv(chip_x, chip_y, regaff)
+    ulx, uly = transform_rc(v, h, regaff)
     aff = buildaff(ulx, uly, 30)
     row_off, col_off = transform_geo(chip_x, chip_y, aff)
 
@@ -211,9 +231,10 @@ def writesynthetic(path: str, chip_x: float, chip_y: float, data: np.ndarray) ->
         writep(path, data[:, idx].reshape(100, 100), col_off, row_off, band=idx + 1)
 
 
-def maketile(path: str, chip_x: float, chip_y: float, product: str) -> gdal.Dataset:
-    h, v = determine_hv(chip_x, chip_y, _cu_tileaff)
-    ulx, uly = transform_rc(v, h, _cu_tileaff)
+def maketile(path: str, chip_x: float, chip_y: float, product: str, region: str) -> gdal.Dataset:
+    regaff = regiontileaff(region)
+    h, v = determine_hv(chip_x, chip_y, regaff)
+    ulx, uly = transform_rc(v, h, regaff)
     aff = buildaff(ulx, uly, 30)
     datatype = _productmap[product][1]
 
@@ -227,11 +248,11 @@ def maketile(path: str, chip_x: float, chip_y: float, product: str) -> gdal.Data
     else:
         bands = 1
 
-    return create(path, 5000, 5000, aff, datatype, ct=ct, bands=bands, proj=cu_wkt)
+    return create(path, 5000, 5000, aff, datatype, ct=ct, bands=bands, proj=regionwkt(region))
 
 
-def makepath(root: str, chip_x: float, chip_y: float, prod: str, date: str, trunc_dates: bool) -> str:
-    return os.path.join(root, filename(chip_x, chip_y, prod, date, trunc_dates))
+def makepath(root: str, chip_x: float, chip_y: float, prod: str, date: str, trunc_dates: bool, region: str) -> str:
+    return os.path.join(root, filename(chip_x, chip_y, prod, date, trunc_dates, region))
 
 
 def multiout(output_q, outdir, count, cliargs):
@@ -257,21 +278,21 @@ def multiout(output_q, outdir, count, cliargs):
 
         for prod in out:
             for date in out[prod]:
-                outpath = makepath(outdir, chip_x, chip_y, prod, date, cliargs.trunc_dates)
+                outpath = makepath(outdir, chip_x, chip_y, prod, date, cliargs.trunc_dates, cliargs.region)
 
                 if outpath not in dss:
                     # log.debug('Outpath not in keys: %s', outpath)
                     # log.debug('Keys: %s', dss.keys())
                     log.debug('Making product output: %s', outpath)
-                    dss[outpath] = maketile(outpath, chip_x, chip_y, prod)
+                    dss[outpath] = maketile(outpath, chip_x, chip_y, prod, cliargs.region)
                     dss[outpath] = None
 
                 if prod == 'Synthetic':
                     # writesynthetic(dss[outpath], chip_x, chip_y, out[prod][date])
-                    writesynthetic(outpath, chip_x, chip_y, out[prod][date])
+                    writesynthetic(outpath, chip_x, chip_y, out[prod][date], cliargs.region)
                 else:
                     # writechip(dss[outpath], chip_x, chip_y, out[prod][date])
-                    writechip(outpath, chip_x, chip_y, out[prod][date])
+                    writechip(outpath, chip_x, chip_y, out[prod][date], cliargs.region)
         tot += 1
         log.debug('Total chips done: %s', tot)
 
@@ -308,6 +329,13 @@ if __name__ == '__main__':
                         type=int,
                         default=1,
                         help='Number processes to spawn')
+    parser.add_argument('-region',
+                        dest='region',
+                        action='store',
+                        choices=['cu', 'ak'],
+                        required=False,
+                        default='cu',
+                        help='ARD region for the tile.')
     margs = parser.parse_args()
 
     main(margs)
