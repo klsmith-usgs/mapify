@@ -54,6 +54,8 @@ cu_tileaff = (-2565585, 150000, 0, 3314805, 0, -150000)
 cu_chipaff = (-2565585, 3000, 0, 3314805, 0, -3000)
 ak_tileaff = (-851715, 150000, 0, 2474325, 0, -150000)
 ak_chipaff = (-851715, 3000, 0, 2474325, 0, -3000)
+hi_tileaff = (-444345, 150000, 0, 2168895, 0, -150000)
+hi_chipaff = (-444345, 3000, 0, 2168895, 0, -3000)
 #
 # conus-extent:
 #   xmin: -2565585
@@ -73,3 +75,4 @@ ak_chipaff = (-851715, 3000, 0, 2474325, 0, -3000)
 #
 cu_wkt = 'PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378140,298.2569999999957,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["standard_parallel_1",29.5],PARAMETER["standard_parallel_2",45.5],PARAMETER["latitude_of_center",23],PARAMETER["longitude_of_center",-96],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]]]'
 ak_wkt = 'PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378140,298.2569999999986,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["standard_parallel_1",55],PARAMETER["standard_parallel_2",65],PARAMETER["latitude_of_center",50],PARAMETER["longitude_of_center",-154],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]]]'
+hi_wkt = 'PROJCS["Albers",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378140,298.2569999999986,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["standard_parallel_1",8],PARAMETER["standard_parallel_2",18],PARAMETER["latitude_of_center",3],PARAMETER["longitude_of_center",-157],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]]]'

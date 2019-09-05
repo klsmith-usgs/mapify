@@ -16,7 +16,7 @@ from osgeo import gdal
 from mapify.ccdc import jsonpaths, picklepaths, spatialccdc, loadjfile, loadpfile, pathcoords
 from mapify.products import prodmap, crosswalk, is_lc, lc_color
 from mapify.spatial import readxy, determine_hv, create, transform_geo, buildaff, transform_rc, writep
-from mapify.app import cu_tileaff, ak_tileaff, cu_wkt, ak_wkt
+from mapify.app import cu_tileaff, ak_tileaff, cu_wkt, ak_wkt, hi_wkt, hi_tileaff
 
 _productmap = prodmap()
 
@@ -199,6 +199,8 @@ def regiontileaff(region: str) -> tuple:
         return cu_tileaff
     elif region == 'ak':
         return ak_tileaff
+    elif region == 'hi':
+        return hi_tileaff
     else:
         raise ValueError
 
@@ -208,6 +210,8 @@ def regionwkt(region: str) -> str:
         return cu_wkt
     elif region == 'ak':
         return ak_wkt
+    elif region == 'hi':
+        return hi_wkt
     else:
         raise ValueError
 
