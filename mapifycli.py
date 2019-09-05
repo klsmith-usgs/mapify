@@ -349,7 +349,7 @@ if __name__ == '__main__':
     parser.add_argument('-region',
                         dest='region',
                         action='store',
-                        choices=['cu', 'ak'],
+                        choices=['cu', 'ak', 'hi'],
                         required=False,
                         default='cu',
                         help='ARD region for the tile.')
