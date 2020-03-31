@@ -5,6 +5,7 @@ import os
 import json
 import pickle
 import logging
+import gzip
 from typing import Tuple, List, Sequence
 
 import numpy as np
@@ -29,7 +30,7 @@ def jsonpaths(root: str) -> list:
     """
     return [os.path.join(root, f)
             for f in sorted(os.listdir(root))
-            if f[-5:] == '.json']
+            if f[-5:] == '.json.gz']
 
 
 def picklepaths(root: str) -> list:
@@ -71,7 +72,8 @@ def loadjfile(path: str) -> list:
     Returns:
         dictionary representation of the JSON
     """
-    return json.load(open(path, 'r'))
+    with gzip.open(path, 'rt') as gf:
+        return json.load(gf)
 
 
 def loadjstr(string: str) -> dict:
