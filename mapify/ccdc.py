@@ -30,7 +30,7 @@ def jsonpaths(root: str) -> list:
     """
     return [os.path.join(root, f)
             for f in sorted(os.listdir(root))
-            if f[-8:] == '.json.gz']
+            if f.endswith('.json.gz')]
 
 
 def picklepaths(root: str) -> list:
