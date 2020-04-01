@@ -54,7 +54,7 @@ def yarg(args: argparse.Namespace) -> argparse.Namespace:
         args.cpu = 1
     if args.dates == 'standard':
         args.dates = ','.join([dt.date(year=yr, month=7, day=1).strftime('%Y-%m-%d')
-                               for yr in range(1985, 2018)])
+                               for yr in range(1985, 2020)])
 
     return args
 
