@@ -59,7 +59,7 @@ def pathcoords(path: str) -> Tuple[int, int]:
         chip upper left x/y based on the file name
     """
     parts = os.path.split(path)[-1].split('_')
-    return int(parts[1]), int(parts[2][:-5])
+    return int(parts[1]), int(parts[2][:-8])
 
 
 def loadjfile(path: str) -> list:
