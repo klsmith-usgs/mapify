@@ -262,7 +262,7 @@ def spatialccd(jdata: list) -> list:
             row, col = transform_geo(d['x'], d['y'], aff)
 
             try:
-                result = d.get('result', 'null')
+                result = d.get('results', None)
                 outdata[row][col] = result
             except:
                 raise #ValueError
