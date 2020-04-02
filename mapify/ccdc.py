@@ -263,7 +263,7 @@ def spatialccd(jdata: list) -> list:
 
             try:
                 result = d.get('result', 'null')
-                outdata[row][col] = loadjstr(result)
+                outdata[row][col] = result
             except:
                 raise #ValueError
 
