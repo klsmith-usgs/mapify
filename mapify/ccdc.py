@@ -292,8 +292,8 @@ def nbrdiff(chgmodel):
     """
     Calculate how much NBR shifts from beginning to the end of the segment.
     """
-    sord = toord_iso(chgmodel['sday'])
-    eord = toord_iso(chgmodel['eday'])
+    sord = toord_iso(chgmodel['start_day'])
+    eord = toord_iso(chgmodel['end_day'])
 
     nir_st = chgmodel['nicoef'][0] * sord + chgmodel['niint']
     nir_en = chgmodel['nicoef'][0] * eord + chgmodel['niint']
