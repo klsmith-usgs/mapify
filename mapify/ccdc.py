@@ -22,6 +22,8 @@ log = logging.getLogger()
 grass = _lc_map['grass']
 forest = _lc_map['tree']
 
+class_vals = tuple(range(10))
+
 
 def jsonpaths(root: str) -> list:
     """
@@ -176,7 +178,7 @@ def buildccdc(chgmodel: dict, preds: List[dict] = None, band_names: Sequence=_ba
                          class_split=0,
                          class_probs1=np.full((8,), -1),
                          class_probs2=np.full((8,), -1),
-                         class_vals=tuple([-1] * 9))
+                         class_vals=class_vals)
     elif vegincrease(chgmodel, preds):
         return CCDCModel(start_day=chgmodel['start_day'],
                          end_day=chgmodel['end_day'],
@@ -188,7 +190,7 @@ def buildccdc(chgmodel: dict, preds: List[dict] = None, band_names: Sequence=_ba
                          class_split=splitdate(preds, 'tree'),
                          class_probs1=growthgrass(),
                          class_probs2=growthforest(),
-                         class_vals=tuple([1] * 9))
+                         class_vals=class_vals)
     elif vegdecrease(chgmodel, preds):
         return CCDCModel(start_day=chgmodel['start_day'],
                          end_day=chgmodel['end_day'],
@@ -200,7 +202,7 @@ def buildccdc(chgmodel: dict, preds: List[dict] = None, band_names: Sequence=_ba
                          class_split=splitdate(preds, 'grass'),
                          class_probs1=declineforest(),
                          class_probs2=declinegrass(),
-                         class_vals=tuple([1] * 9))
+                         class_vals=class_vals)
     else:
         return CCDCModel(start_day=chgmodel['start_day'],
                          end_day=chgmodel['end_day'],
@@ -212,7 +214,7 @@ def buildccdc(chgmodel: dict, preds: List[dict] = None, band_names: Sequence=_ba
                          class_split=0,
                          class_probs1=meanpred(preds),
                          class_probs2=np.full((8,), -1),
-                         class_vals=tuple([1] * 9))
+                         class_vals=class_vals)
 
 
 def unify(ccd: dict, classified: dict, loc: Tuple[float, float]) -> List[CCDCModel]:
@@ -255,16 +257,16 @@ def spatialccdc(ccd_data: list, class_data: list) -> np.ndarray:
     Returns:
         ndarray of lists(of CCDC namedtuples)
     """
-    ccd = groupchg(ccd_data)
-    cl_data = grouppreds(class_data)
+    ccd_data = groupchg(ccd_data)
+    class_data = grouppreds(class_data)
 
     outdata = np.full(fill_value=None, shape=(100, 100), dtype=object)
     chip_x, chip_y = (ccd_data[0]['chip_x'], ccd_data[0]['chip_y'])
     aff = buildaff(chip_x, chip_y, 30)
 
-    for loc in ccd:
+    for loc in ccd_data:
         row, col = transform_geo(loc[2], loc[3], aff)
-        outdata[row][col] = unify(ccd[loc], cl_data, loc)
+        outdata[row][col] = unify(ccd_data[loc], class_data, loc)
 
     return outdata.flatten()
 
