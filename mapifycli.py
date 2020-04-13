@@ -342,11 +342,6 @@ if __name__ == '__main__':
                         default=None,
                         required=False,
                         help='Input directory of classification files to process')
-    parser.add_argument('-nlcdpath',
-                        type=str,
-                        default=None,
-                        required=False,
-                        help='File path to NLCD')
     parser.add_argument('-region',
                         dest='region',
                         action='store',
