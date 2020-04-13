@@ -355,13 +355,8 @@ def groupchg(segments: List[dict]) -> dict:
     """
     Group segments based on (px, py) and then sort them based on sday.
     """
-    out = defaultdict(list)
-    for seg in segments:
-        loc = (seg['cx'], seg['cy'], seg['px'], seg['py'])
 
-        out[loc].append(seg)
-
-    return {k: sorted(v, key=lambda x: x['sday']) for k, v in out.items()}
+    return {(seg['chip_x'], seg['chip_y'], seg['x'], seg['y']): seg['results'] for seg in segments}
 
 
 def growthforest():
