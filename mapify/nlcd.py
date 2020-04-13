@@ -67,4 +67,4 @@ def getnlcd(chip_x, chip_y, resource=aux_url):
     if not data:
         data = np.zeros(shape=(100, 100))
 
-    return data
+    return data['data']
