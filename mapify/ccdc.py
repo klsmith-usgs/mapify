@@ -257,11 +257,12 @@ def spatialccdc(ccd_data: list, class_data: list) -> np.ndarray:
     Returns:
         ndarray of lists(of CCDC namedtuples)
     """
+    chip_x, chip_y = (ccd_data[0]['chip_x'], ccd_data[0]['chip_y'])
+
     ccd_data = groupchg(ccd_data)
     class_data = grouppreds(class_data)
 
     outdata = np.full(fill_value=None, shape=(100, 100), dtype=object)
-    chip_x, chip_y = (ccd_data[0]['chip_x'], ccd_data[0]['chip_y'])
     aff = buildaff(chip_x, chip_y, 30)
 
     for loc in ccd_data:
