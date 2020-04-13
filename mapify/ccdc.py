@@ -6,6 +6,8 @@ import json
 import pickle
 import logging
 import gzip
+from collections import defaultdict
+import datetime as dt
 from typing import Tuple, List, Sequence
 
 import numpy as np
@@ -13,9 +15,12 @@ import numpy as np
 from mapify.products import BandModel, CCDCModel
 from mapify.spatial import buildaff, transform_geo
 from mapify.app import band_names as _band_names
+from mapify.app import lc_map as _lc_map
 
 
 log = logging.getLogger()
+grass = _lc_map['grass']
+forest = _lc_map['forest']
 
 
 def jsonpaths(root: str) -> list:
@@ -146,15 +151,13 @@ def buildband(chgmodel: dict, name: str) -> BandModel:
                      intercept=chgmodel[name]['intercept'])
 
 
-def buildccdc(chgmodel: dict, cl1model: dict=None,
-              cl2model: dict=None, band_names: Sequence=_band_names) -> CCDCModel:
+def buildccdc(chgmodel: dict, preds: List[dict] = None, band_names: Sequence=_band_names) -> CCDCModel:
     """
     Build a complete CCDC model
 
     Args:
         chgmodel: dictionary representation of a change model
-        cl1model: dictionary representation of a classification model
-        cl2model: dictionary representation of the second part of annualized classification (if it exists for this segment)
+        preds: predictions for the associated change model
         band_names: band names present in the change model
 
     Returns:
@@ -162,7 +165,7 @@ def buildccdc(chgmodel: dict, cl1model: dict=None,
     """
     bands = [buildband(chgmodel, b) for b in band_names]
 
-    if cl1model is None:
+    if preds is None:
         return CCDCModel(start_day=chgmodel['start_day'],
                          end_day=chgmodel['end_day'],
                          break_day=chgmodel['break_day'],
@@ -174,7 +177,7 @@ def buildccdc(chgmodel: dict, cl1model: dict=None,
                          class_probs1=np.full((8,), -1),
                          class_probs2=np.full((8,), -1),
                          class_vals=tuple([-1] * 9))
-    elif cl2model is None:
+    elif vegincrease(chgmodel, preds):
         return CCDCModel(start_day=chgmodel['start_day'],
                          end_day=chgmodel['end_day'],
                          break_day=chgmodel['break_day'],
@@ -182,10 +185,22 @@ def buildccdc(chgmodel: dict, cl1model: dict=None,
                          change_prob=chgmodel['change_probability'],
                          curve_qa=chgmodel['curve_qa'],
                          bands=tuple(bands),
-                         class_split=0,
-                         class_probs1=np.array(cl1model['class_probs']),
-                         class_probs2=np.full((8,), -1),
-                         class_vals=cl1model['class_vals'])
+                         class_split=splitdate(preds, 'tree'),
+                         class_probs1=growthgrass(),
+                         class_probs2=growthforest(),
+                         class_vals=tuple([1] * 9))
+    elif vegdecrease(chgmodel, preds):
+        return CCDCModel(start_day=chgmodel['start_day'],
+                         end_day=chgmodel['end_day'],
+                         break_day=chgmodel['break_day'],
+                         obs_count=chgmodel['observation_count'],
+                         change_prob=chgmodel['change_probability'],
+                         curve_qa=chgmodel['curve_qa'],
+                         bands=tuple(bands),
+                         class_split=splitdate(preds, 'grass'),
+                         class_probs1=declineforest(),
+                         class_probs2=declinegrass(),
+                         class_vals=tuple([1] * 9))
     else:
         return CCDCModel(start_day=chgmodel['start_day'],
                          end_day=chgmodel['end_day'],
@@ -194,13 +209,13 @@ def buildccdc(chgmodel: dict, cl1model: dict=None,
                          change_prob=chgmodel['change_probability'],
                          curve_qa=chgmodel['curve_qa'],
                          bands=tuple(bands),
-                         class_split=cl2model['start_day'],
-                         class_probs1=np.array(cl1model['class_probs']),
-                         class_probs2=np.array(cl2model['class_probs']),
-                         class_vals=cl1model['class_vals'])
+                         class_split=0,
+                         class_probs1=meanpred(preds),
+                         class_probs2=np.full((8,), -1),
+                         class_vals=tuple([1] * 9))
 
 
-def unify(ccd: dict, classified: list) -> List[CCDCModel]:
+def unify(ccd: dict, classified: dict, loc: Tuple[float, float]) -> List[CCDCModel]:
     """
     Combine the two disparate models for a given pixel and make a list of unified models.
 
@@ -217,99 +232,161 @@ def unify(ccd: dict, classified: list) -> List[CCDCModel]:
         return models
     # log.debug(len(classified))
     # log.debug(len(ccd['change_models']))
-    for change in ccd['change_models']:
-        found = False
-        for cl1 in classified:
-            # One for one
-            if cl1['start_day'] == change['start_day'] and cl1['end_day'] == change['end_day']:
-                models.append(buildccdc(change, cl1))
-                found = True
-                break
-
-            # Looks like we have a twofer ...
-            elif cl1['start_day'] == change['start_day']:
-                for cl2 in classified:
-                    if cl2['end_day'] == change['end_day']:
-                        models.append(buildccdc(change, cl1, cl2))
-                        found = True
-                        break
-                break
-
-        # Looks like a segment that didn't fall on July 1st ... blah
-        if found is False:
-            models.append(buildccdc(change))
+    for segment in ccd['change_models']:
+        preds = classified.get((*loc, segment['start_day']), None)
+        models.append(buildccdc(segment, preds))
 
     return models
-
-
-def spatialccd(jdata: list) -> list:
-    """
-    We can't really guarantee what order (pixel wise) the CCD data is in. This aligns it 
-    in a way that makes sense spatially, which is good for output to rasters.
-
-    Args:
-        jdata: initial JSON deserialization of change results for a chip
-
-    Returns:
-        ndarray of dictionaries
-    """
-    outdata = np.full(fill_value=None, shape=(100, 100), dtype=object)
-
-    if jdata is not None:
-        chip_x, chip_y = (jdata[0]['chip_x'], jdata[0]['chip_y'])
-        aff = buildaff(chip_x, chip_y, 30)
-        for d in jdata:
-            row, col = transform_geo(d['x'], d['y'], aff)
-
-            try:
-                result = d.get('results', None)
-                outdata[row][col] = result
-            except:
-                raise #ValueError
-
-    return list(outdata.flatten())
-#
-#
-# def spatialcl(pdata: list) -> np.ndarray:
-#     """
-#     This is here more for consistency's sake. During classification, the change results are spatially
-#     aligned, so these are already aligned as well ...
-#
-#     Args:
-#         pdata: pickle deserialization of classification results for a chip
-#
-#     Returns:
-#         ndarray of lists(of dictionaries)
-#     """
-#     return np.array(pdata).reshape(100, 100)
 
 
 def noclass(ccd: dict) -> list:
     return [buildccdc(model) for model in ccd['change_models']]
 
 
-def spatialccdc(jdata: list, pdata: list) -> list:
+def spatialccdc(ccd_data: list, class_data: list) -> np.ndarray:
     """
     Provide a unified CCDC model in a pseudo-spatial chip, as represented by a
     flattened list of lists.
 
     Args:
-        jdata: initial JSON deserialization of change results for a chip
-        pdata: pickle deserialization of classification results for a chip
+        ccd_data: initial JSON deserialization of change results for a chip
+        class_data: deserialization of classification results for a chip
 
     Returns:
         ndarray of lists(of CCDC namedtuples)
     """
-    # cl = spatialcl(pdata).flatten()
-    ccd = spatialccd(jdata)
-    if pdata is None:
-        return [noclass(c) for c in ccd]
-    else:
-        return [unify(c, cl1) for c, cl1 in zip(ccd, pdata)]
+    ccd = groupchg(ccd_data)
+    cl_data = grouppreds(class_data)
+
+    outdata = np.full(fill_value=None, shape=(100, 100), dtype=object)
+    chip_x, chip_y = (ccd_data[0]['chip_x'], ccd_data[0]['chip_y'])
+    aff = buildaff(chip_x, chip_y, 30)
+
+    for loc in ccd:
+        row, col = transform_geo(loc[2], loc[3], aff)
+        outdata[row][col] = unify(ccd[loc], cl_data, loc)
+
+    return outdata.flatten()
 
 
-def validate(jpaths: list, ppaths: list) -> list:
+def splitdate(preds, covertype, lcmap=_lc_map):
     """
-
+    Return the date of when the cover first showed up.
     """
-    pass
+    mprobs = np.array([np.argmax(p['prob']) for p in preds])
+
+    # Look for the first instance of the target class showing up.
+    spl_idx = np.flatnonzero(mprobs == lcmap[covertype])[0]
+
+    return preds[spl_idx]['pday']
+
+
+def toord_iso(iso_date: str) -> int:
+    """
+    Convert an ordinal date to ISO-8601
+    """
+    return dt.date.fromisoformat(iso_date).toordinal()
+
+
+def nbrdiff(chgmodel):
+    """
+    Calculate how much NBR shifts from beginning to the end of the segment.
+    """
+    sord = toord_iso(chgmodel['sday'])
+    eord = toord_iso(chgmodel['eday'])
+
+    nir_st = chgmodel['nicoef'][0] * sord + chgmodel['niint']
+    nir_en = chgmodel['nicoef'][0] * eord + chgmodel['niint']
+
+    swir_st = chgmodel['s1coef'][0] * sord + chgmodel['s1int']
+    swir_en = chgmodel['s1coef'][0] * eord + chgmodel['s1int']
+
+    nbr_st = (nir_st - swir_st) / (nir_st + swir_st)
+    nbr_en = (nir_en - swir_en) / (nir_en + swir_en)
+
+    return nbr_en - nbr_st
+
+
+def vegincrease(chgmodel, preds, lcmap=_lc_map):
+    """
+    Given a list of date sorted predictions that for a segment, determine if it is a
+    vegetation increase segment.
+    """
+    diff = nbrdiff(chgmodel)
+    return diff > 0.05 and np.argmax(preds[0]['prob']) == lcmap['grass'] and np.argmax(preds[-1]['prob']) == lcmap[
+        'tree']
+
+
+def vegdecrease(chgmodel, preds, lcmap=_lc_map):
+    """
+    Given a list of date sorted predictions that for a segment, determine if it is a
+    vegetation decrease segment.
+    """
+    diff = nbrdiff(chgmodel)
+    return diff < -0.05 and np.argmax(preds[0]['prob']) == lcmap['tree'] and np.argmax(preds[-1]['prob']) == lcmap[
+        'grass']
+
+
+def meanpred(preds):
+    """
+    Given a list of predictions, returns the per-class mean.
+    This makes no assumption that they actually belong together, but they should.
+    """
+    return np.mean(np.array([p['prob'] for p in preds], dtype=np.float32), axis=0)
+
+
+def grouppreds(preds: List[dict]) -> dict:
+    """
+    Group predictions based on location and start date, then sorted by the prediction date.
+    """
+    out = defaultdict(list)
+
+    if preds is None:
+        return out
+
+    for pred in preds:
+        key = (pred['cx'], pred['cy'], pred['px'], pred['py'], pred['sday'])
+        out[key].append(pred)
+
+    return {k: sorted(v, key=lambda x: x['pday']) for k, v in out.items()}
+
+
+def groupchg(segments: List[dict]) -> dict:
+    """
+    Group segments based on (px, py) and then sort them based on sday.
+    """
+    out = defaultdict(list)
+    for seg in segments:
+        loc = (seg['cx'], seg['cy'], seg['px'], seg['py'])
+
+        out[loc].append(seg)
+
+    return {k: sorted(v, key=lambda x: x['sday']) for k, v in out.items()}
+
+
+def growthforest():
+    ret = np.zeros(shape=(9,), dtype=np.float)
+    ret[forest] = 1.11
+    ret[grass] = 1.10
+    return ret
+
+
+def growthgrass():
+    ret = np.zeros(shape=(9,), dtype=np.float)
+    ret[forest] = 1.10
+    ret[grass] = 1.11
+    return ret
+
+
+def declineforest():
+    ret = np.zeros(shape=(9,), dtype=np.float)
+    ret[forest] = 1.21
+    ret[grass] = 1.20
+    return ret
+
+
+def declinegrass():
+    ret = np.zeros(shape=(9,), dtype=np.float)
+    ret[forest] = 1.20
+    ret[grass] = 1.21
+    return ret

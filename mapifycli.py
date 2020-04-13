@@ -75,7 +75,7 @@ def single(args: argparse.Namespace) -> None:
 def multi(args: argparse.Namespace) -> None:
     log.debug('Multi-processing starting')
     worker_cnt = args.cpu - 1
-    in_q = enqueue(args.jdir, args.pdir, worker_cnt)
+    in_q = enqueue(args.ccd, args.classify, worker_cnt)
     log.debug('Size of input queue: %s', in_q.qsize())
     out_q = mp.Queue()
 
@@ -88,13 +88,13 @@ def multi(args: argparse.Namespace) -> None:
     multiout(out_q, args.outdir, worker_cnt,  args)
 
 
-def enqueue(jdir: str, pdir: str, kill: int) -> mp.Queue:
+def enqueue(ccd_dir: str, class_dir: str, kill: int) -> mp.Queue:
     q = mp.Queue()
-    if pdir is None:
-        for j in jsonpaths(jdir):
+    if class_dir is None:
+        for j in jsonpaths(ccd_dir):
             q.put((j, None))
     else:
-        for j, p in zip(jsonpaths(jdir), picklepaths(pdir)):
+        for j, p in zip(jsonpaths(ccd_dir), picklepaths(class_dir)):
             q.put((j, p))
 
     for _ in range(kill):
@@ -126,27 +126,27 @@ def neednlcd(name: str, fill_nomodel: bool) -> bool:
 
 def worker(inq: mp.Queue, outq: mp.Queue, args: argparse.Namespace):
     while True:
-        jpath, ppath = inq.get()
+        ccd_path, class_path = inq.get()
 
-        if jpath == -1:
+        if ccd_path == -1:
             log.debug('Shutting down ...')
             outq.put((-1,) * 3)
             break
 
         log.debug('Received: %s',
-                  os.path.split(jpath)[-1]
+                  os.path.split(ccd_path)[-1]
                   # os.path.split(ppath)[-1]
                   )
 
-        jdata = loadjfile(jpath)
+        ccd_data = loadjfile(ccd_path)
 
-        if ppath is not None:
-            pdata = loadpfile(ppath)
+        if class_path is not None:
+            class_data = loadjfile(class_path)
         else:
-            pdata = None
+            class_data = None
 
-        ccdc = spatialccdc(jdata, pdata)
-        chip_x, chip_y = pathcoords(jpath)
+        ccdc = spatialccdc(ccd_data, class_data)
+        chip_x, chip_y = pathcoords(ccd_path)
 
         prods = args.prods.split(',')
         ords = [ordme(d) for d in args.dates.split(',')]
@@ -323,9 +323,9 @@ if __name__ == '__main__':
     '''.format(prods=validprods())
 
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('jdir',
+    parser.add_argument('ccd',
                         type=str,
-                        help='Input directory of JSON files to process')
+                        help='Input directory of CCD files to process')
     parser.add_argument('outdir',
                         type=str,
                         help='Output directory for GeoTiff maps')
@@ -336,11 +336,11 @@ if __name__ == '__main__':
     parser.add_argument('prods',
                         type=str,
                         help='Comma separated list of products to build')
-    parser.add_argument('-pdir',
+    parser.add_argument('-classify',
                         type=str,
                         default=None,
                         required=False,
-                        help='Input directory of pickle files to process for classification')
+                        help='Input directory of classification files to process')
     parser.add_argument('-nlcdpath',
                         type=str,
                         default=None,
