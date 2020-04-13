@@ -13,7 +13,7 @@ import logging
 import numpy as np
 from osgeo import gdal
 
-from mapify.ccdc import jsonpaths, picklepaths, spatialccdc, loadjfile, loadpfile, pathcoords
+from mapify.ccdc import jsonpaths, spatialccdc, loadjfile, pathcoords
 from mapify.products import prodmap, crosswalk, is_lc, lc_color
 from mapify.spatial import readxy, determine_hv, create, transform_geo, buildaff, transform_rc, writep
 from mapify.app import cu_tileaff, ak_tileaff, cu_wkt, ak_wkt, hi_wkt, hi_tileaff
@@ -95,7 +95,7 @@ def enqueue(ccd_dir: str, class_dir: str, kill: int) -> mp.Queue:
         for j in jsonpaths(ccd_dir):
             q.put((j, None))
     else:
-        for j, p in zip(jsonpaths(ccd_dir), picklepaths(class_dir)):
+        for j, p in zip(jsonpaths(ccd_dir), jsonpaths(class_dir)):
             q.put((j, p))
 
     for _ in range(kill):
