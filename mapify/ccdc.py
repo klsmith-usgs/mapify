@@ -20,7 +20,7 @@ from mapify.app import lc_map as _lc_map
 
 log = logging.getLogger()
 grass = _lc_map['grass']
-forest = _lc_map['forest']
+forest = _lc_map['tree']
 
 
 def jsonpaths(root: str) -> list:
