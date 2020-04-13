@@ -295,11 +295,11 @@ def nbrdiff(chgmodel):
     sord = chgmodel['start_day']
     eord = chgmodel['end_day']
 
-    nir_st = chgmodel['nicoef'][0] * sord + chgmodel['niint']
-    nir_en = chgmodel['nicoef'][0] * eord + chgmodel['niint']
+    nir_st = chgmodel['nir']['coefficients'][0] * sord + chgmodel['nir']['intercept']
+    nir_en = chgmodel['nir']['coefficients'][0] * eord + chgmodel['nir']['intercept']
 
-    swir_st = chgmodel['s1coef'][0] * sord + chgmodel['s1int']
-    swir_en = chgmodel['s1coef'][0] * eord + chgmodel['s1int']
+    swir_st = chgmodel['swir1']['coefficients'][0] * sord + chgmodel['swir1']['intercept']
+    swir_en = chgmodel['swir1']['coefficients'][0] * eord + chgmodel['swir1']['intercept']
 
     nbr_st = (nir_st - swir_st) / (nir_st + swir_st)
     nbr_en = (nir_en - swir_en) / (nir_en + swir_en)
