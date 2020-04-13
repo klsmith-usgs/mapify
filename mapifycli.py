@@ -17,6 +17,7 @@ from mapify.ccdc import jsonpaths, picklepaths, spatialccdc, loadjfile, loadpfil
 from mapify.products import prodmap, crosswalk, is_lc, lc_color
 from mapify.spatial import readxy, determine_hv, create, transform_geo, buildaff, transform_rc, writep
 from mapify.app import cu_tileaff, ak_tileaff, cu_wkt, ak_wkt, hi_wkt, hi_tileaff
+from mapify.nlcd import getnlcd
 
 _productmap = prodmap()
 
@@ -156,7 +157,7 @@ def worker(inq: mp.Queue, outq: mp.Queue, args: argparse.Namespace):
 
         nlcd = None
         if ('LC_Primary' in prods or 'LC_Change' in prods) and args.fill_nomodel:
-            nlcd = nlcdchip(args.nlcdpath, chip_x, chip_y).flatten()
+            nlcd = getnlcd(chip_x, chip_y).flatten()
             if args.xwalk:
                 nlcd = crosswalk(nlcd)
 
