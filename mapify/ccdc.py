@@ -278,7 +278,7 @@ def splitdate(preds, covertype, lcmap=_lc_map):
     # Look for the first instance of the target class showing up.
     spl_idx = np.flatnonzero(mprobs == lcmap[covertype])[0]
 
-    return preds[spl_idx]['pday']
+    return toord_iso(preds[spl_idx]['pday'])
 
 
 def toord_iso(iso_date: str) -> int:
