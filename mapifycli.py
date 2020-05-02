@@ -382,7 +382,7 @@ if __name__ == '__main__':
     parser.add_argument('--trunc-dates',
                         dest='trunc_dates',
                         action='store_true',
-                        default=False,
+                        default=True,
                         help='Truncate the date on the filename to just the year')
     parser.add_argument('--cpu',
                         dest='cpu',

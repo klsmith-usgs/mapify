@@ -701,17 +701,17 @@ def prodmap() -> dict:
     Returns:
         product mapping
     """
-    return {'Chg_ChangeDay': [chg_doy, gdal.GDT_UInt16],
-            'Chg_LastChange': [chg_lastbrk, gdal.GDT_UInt16],
-            'Chg_SegLength': [chg_seglength, gdal.GDT_UInt16],
-            'Chg_ChangeMag': [chg_mag, gdal.GDT_Float32],
-            'Chg_Quality': [chg_modelqa, gdal.GDT_Byte],
-            'LC_Primary': [lc_primary, gdal.GDT_Byte],
-            'LC_Secondary': [lc_secondary, gdal.GDT_Byte],
-            'LC_PrimeConf': [lc_primaryconf, gdal.GDT_Byte],
-            'LC_SecondConf': [lc_secondaryconf, gdal.GDT_Byte],
-            'LC_Change': [lc_fromto, gdal.GDT_Byte],
-            'Synthetic': [synthetic, gdal.GDT_Int16]}
+    return {'SCTIME': [chg_doy, gdal.GDT_UInt16],
+            'SCLAST': [chg_lastbrk, gdal.GDT_UInt16],
+            'SCSTAB': [chg_seglength, gdal.GDT_UInt16],
+            'SCMAG': [chg_mag, gdal.GDT_Float32],
+            'SCMQA': [chg_modelqa, gdal.GDT_Byte],
+            'LCPRI': [lc_primary, gdal.GDT_Byte],
+            'LCSEC': [lc_secondary, gdal.GDT_Byte],
+            'LCPCONF': [lc_primaryconf, gdal.GDT_Byte],
+            'LCSCONF': [lc_secondaryconf, gdal.GDT_Byte],
+            'LCACHG': [lc_fromto, gdal.GDT_Byte],
+            'SYNTH': [synthetic, gdal.GDT_Int16]}
 
 
 def is_lc(name: str) -> bool:
